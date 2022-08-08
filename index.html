@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>轮播图</title>
+    <style>
+      img {
+        width: 1280px;
+        height: 540px;
+      }
+      .box {
+        position: relative;
+        width: 1280px;
+        height: 540px;
+        overflow: hidden;
+        border: 1px solid cyan;
+      }
+      .img-list {
+        width: calc(1280px * 4);
+        height: 540px;
+      }
+
+      .img-list div {
+        float: left;
+      }
+
+      .prev {
+        position: absolute;
+        top: 45%;
+        left: 10px;
+        color: #fff;
+        font-size: 22px;
+        width: 44px;
+        height: 44px;
+        line-height: 44px;
+        text-align: center;
+        background-color: rgba(0, 0, 0, 0.2);
+      }
+      .next {
+        position: absolute;
+        top: 45%;
+        right: 10px;
+        color: #fff;
+        font-size: 22px;
+        width: 44px;
+        height: 44px;
+        line-height: 44px;
+        text-align: center;
+        background-color: rgba(0, 0, 0, 0.2);
+      }
+      .icon-list {
+        list-style: none;
+        position: absolute;
+        right: 10px;
+        bottom: 10px;
+      }
+      .icon-list li {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background-color: rgba(0, 0, 0, 0.2);
+        text-align: center;
+        line-height: 30px;
+        color: #fff;
+        float: left;
+        margin-left: 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="box">
+      <div class="img-list">
+        <div><img src="images/1.jpg" alt="" /></div>
+        <div><img src="images/2.jpg" alt="" /></div>
+        <div><img src="images/3.jpg" alt="" /></div>
+      </div>
+      <div class="prev"><</div>
+      <div class="next">></div>
+      <ul class="icon-list">
+        <li>1</li>
+        <li>2</li>
+        <li>3</li>
+      </ul>
+    </div>
+
+    <script>
+      const box = document.querySelector(".box");
+      const imgList = document.querySelector(".img-list");
+      const prev = document.querySelector(".prev");
+      const next = document.querySelector(".next");
+      const iconList = document.querySelector(".icon-list");
+      const lis = iconList.querySelectorAll("li");
+
+      // 每张图片的宽度
+      let imgWidth = 1280;
+      // 图片总数
+      let imgCount = imgList.children.length;
+      // 图片拼接的组 margin-left 的初始数据
+      let currentLeft = 0;
+      // 每次移动的距离 px
+      let moveStep = 10;
+      // 每次移动花费的时间 毫秒
+      let moveCost = 10;
+      // 每张图片移动间歇时间 毫秒
+      let sleepCost = 1000;
+      // 自动轮播的定时器
+      let timer;
+
+      // img-list组后面 创建一个虚拟dom 保持视觉上的切换连续性
+      createVirtualDom();
+
+      // 注册icon点击事件
+      bindIconEvent();
+
+      // 注册鼠标移入事件
+      // mouserOverStop();
+
+      // 注册鼠标移出事件
+      // mouserOutStart();
+
+      // 开启自动轮播
+      run();
+
+      /**
+       * 自动轮播函数
+       */
+      function run() {
+        if (currentLeft <= -imgWidth * imgCount) {
+          currentLeft = 0;
+        }
+        imgList.style.marginLeft = currentLeft + "px";
+        let n = currentLeft % imgWidth == 0 ? sleepCost : moveCost;
+        timer = setTimeout(run, n);
+        let currentN = getCurrentN();
+        markIcon(currentN);
+        currentLeft -= moveStep;
+      }
+
+      /**
+       *  获取当前正在轮播的图片序号
+       */
+      function getCurrentN() {
+        return Math.floor(-currentLeft / imgWidth);
+      }
+
+      /**
+       *  向前翻
+       */
+      prev.onclick = function () {
+        let prevN = getCurrentN() - 1;
+        jumpToN(prevN);
+      };
+
+      /**
+       *  向后翻
+       */
+      next.onclick = function () {
+        let nextN = getCurrentN() + 1;
+        jumpToN(nextN);
+      };
+
+      /**
+       *  跳转到指定图片位置
+       */
+      function jumpToN(n) {
+        if (n < 0) {
+          n = imgCount - 1;
+        }
+        if (n > imgCount - 1) {
+          n = 0;
+        }
+        let distance = -n * imgWidth;
+        imgList.style.marginLeft = distance + "px";
+        // 移动后更新当前的margin-left
+        currentLeft = distance;
+      }
+
+      /**
+       *  将当前展示图像的对应图标点亮
+       */
+      function markIcon(n) {
+        for (const li of lis) {
+          li.style.backgroundColor = "";
+        }
+        lis[n].style.backgroundColor = "red";
+      }
+
+      /**
+       *  为每个icon绑定点击事件
+       */
+      function bindIconEvent() {
+        for (const li of lis) {
+          li.onclick = function (event) {
+            let currentN = parseInt(event.target.innerText) - 1;
+            jumpToN(currentN);
+          };
+        }
+      }
+
+      /**
+       *  鼠标停留在图片上 停止自动轮播
+       */
+      function mouserOverStop() {
+        box.onmouseover = function () {
+          clearTimeout(timer);
+        };
+      }
+
+      /**
+       *  鼠标离开图片上 恢复自动轮播
+       */
+      function mouserOutStart() {
+        box.onmouseout = function () {
+          run();
+        };
+      }
+
+      /**
+       *  创建一个虚拟dom 并追加到img-list之后
+       */
+      function createVirtualDom() {
+        const virtualDom = imgList.firstElementChild.cloneNode(true);
+        imgList.appendChild(virtualDom);
+      }
+    </script>
+  </body>
+</html>
